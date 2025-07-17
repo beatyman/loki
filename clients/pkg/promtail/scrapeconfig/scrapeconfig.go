@@ -51,6 +51,7 @@ type Config struct {
 	ServiceDiscoveryConfig ServiceDiscoveryConfig `mapstructure:",squash" yaml:",inline"`
 	Encoding               string                 `mapstructure:"encoding,omitempty" yaml:"encoding,omitempty"`
 	DecompressionCfg       *DecompressionConfig   `yaml:"decompression,omitempty"`
+	HTTPTargetConfig       *HTTPTargetConfig      `yaml:"http,omitempty"`
 }
 
 type DecompressionConfig struct {
@@ -486,4 +487,13 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	return nil
+}
+
+type HTTPTargetConfig struct {
+	URL          string         `yaml:"url"`
+	Username     string         `yaml:"username"`
+	Password     string         `yaml:"password"`
+	PollInterval time.Duration  `yaml:"poll_interval"`
+	Timeout      time.Duration  `yaml:"timeout"`
+	Labels       model.LabelSet `yaml:"labels"`
 }

@@ -44,6 +44,8 @@ const (
 
 	// HerokuDrainTargetType is a Heroku Logs target
 	HerokuDrainTargetType = TargetType("HerokuDrain")
+
+	HTTPTargetType = TargetType("HTTP")
 )
 
 // Target is a promtail scrape target

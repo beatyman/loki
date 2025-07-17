@@ -2,6 +2,7 @@ package targets
 
 import (
 	"fmt"
+	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/http"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -41,6 +42,7 @@ const (
 	DockerSDConfigs             = "dockerSDConfigs"
 	HerokuDrainConfigs          = "herokuDrainConfigs"
 	AzureEventHubsScrapeConfigs = "azureeventhubsScrapeConfigs"
+	HTTPScrapeConfigs           = "httpScrapeConfigs" // Add HTTP constant
 )
 
 var (
@@ -52,6 +54,7 @@ var (
 	dockerMetrics      *docker.Metrics
 	journalMetrics     *journal.Metrics
 	herokuDrainMetrics *heroku.Metrics
+	httpMetrics        *http.Metrics // Add HTTP metrics
 )
 
 type targetManager interface {
@@ -117,6 +120,8 @@ func NewTargetManagers(
 			targetScrapeConfigs[DockerSDConfigs] = append(targetScrapeConfigs[DockerSDConfigs], cfg)
 		case cfg.HerokuDrainConfig != nil:
 			targetScrapeConfigs[HerokuDrainConfigs] = append(targetScrapeConfigs[HerokuDrainConfigs], cfg)
+		case cfg.HTTPTargetConfig != nil:
+			targetScrapeConfigs[HTTPScrapeConfigs] = append(targetScrapeConfigs[HTTPScrapeConfigs], cfg)
 		default:
 			return nil, fmt.Errorf("no valid target scrape config defined for %q", cfg.JobName)
 		}
@@ -160,7 +165,9 @@ func NewTargetManagers(
 	if len(targetScrapeConfigs[HerokuDrainConfigs]) > 0 && herokuDrainMetrics == nil {
 		herokuDrainMetrics = heroku.NewMetrics(reg)
 	}
-
+	if len(targetScrapeConfigs[HTTPScrapeConfigs]) > 0 && httpMetrics == nil {
+		httpMetrics = http.NewMetrics(reg)
+	}
 	for target, scrapeConfigs := range targetScrapeConfigs {
 		switch target {
 		case FileScrapeConfigs:
@@ -280,6 +287,12 @@ func NewTargetManagers(
 				return nil, errors.Wrap(err, "failed to make Docker service discovery target manager")
 			}
 			targetManagers = append(targetManagers, cfTargetManager)
+		case HTTPScrapeConfigs:
+			httpTargetManager, err := http.NewTargetManager(httpMetrics, reg, logger, client, scrapeConfigs)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to make HTTP target manager")
+			}
+			targetManagers = append(targetManagers, httpTargetManager)
 		default:
 			return nil, errors.New("unknown scrape config")
 		}
